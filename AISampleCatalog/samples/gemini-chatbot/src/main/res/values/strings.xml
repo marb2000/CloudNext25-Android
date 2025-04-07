@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="geminichatbot_title_bar">Gemini chatbot</string>
+    <string name="geminichatbot_input_placeholder">Type your message</string>
+</resources>

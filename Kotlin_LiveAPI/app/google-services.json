@@ -1,0 +1,108 @@
+{
+  "project_info": {
+    "project_number": "857620473716",
+    "project_id": "vertexaiinfirebase-test",
+    "storage_bucket": "vertexaiinfirebase-test.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:857620473716:android:386139112458174dbb6e21",
+        "android_client_info": {
+          "package_name": "com.example.bidisampleapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBBuSQWjk5VJJnHwOfJxw6M7XXjpnW_j-s"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:857620473716:android:1a2bb4bdaeb888c6bb6e21",
+        "android_client_info": {
+          "package_name": "com.example.comicbookreader"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBpJ5nl2j6D4cspVETNp_MgZguSqNPvzgs"
+        },
+        {
+          "current_key": "AIzaSyBBuSQWjk5VJJnHwOfJxw6M7XXjpnW_j-s"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:857620473716:android:70307b47fc28717cbb6e21",
+        "android_client_info": {
+          "package_name": "com.google.firebase.quickstart.vertexai"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBBuSQWjk5VJJnHwOfJxw6M7XXjpnW_j-s"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:857620473716:android:1f869e0c9b7671a8bb6e21",
+        "android_client_info": {
+          "package_name": "com.google.sample.demovertexai"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBBuSQWjk5VJJnHwOfJxw6M7XXjpnW_j-s"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:857620473716:android:d0c5f4c06130d29abb6e21",
+        "android_client_info": {
+          "package_name": "com.google.vinaytest"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBBuSQWjk5VJJnHwOfJxw6M7XXjpnW_j-s"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

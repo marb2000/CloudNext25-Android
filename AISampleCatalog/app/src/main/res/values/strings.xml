@@ -1,0 +1,9 @@
+<resources>
+    <string name="app_name">AI Sample Catalog</string>
+    <string name="gemini_multimodal_sample_title">Gemini Multimodal Generation</string>
+    <string name="gemini_multimodal_sample_description">A very simple example of multimodal generation using the Gemini 1.5 Flash model.</string>
+    <string name="gemini_chatbot_sample_title">Gemini Chatbot</string>
+    <string name="gemini_chatbot_sample_description">A simple implementation of chatbot using Gemini 1.5 Pro</string>
+    <string name="top_bar_title">Android AI Samples</string>
+    <string name="open_sample_button">Open sample</string>
+</resources>
