@@ -14,10 +14,10 @@ import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.ComponentActivity
-import androidx.cardview.widget.CardView
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.google.android.material.button.MaterialButton
+import com.google.android.material.card.MaterialCardView
 import com.google.firebase.vertexai.FirebaseVertexAI
 import com.google.firebase.vertexai.type.FunctionCallPart
 import com.google.firebase.vertexai.type.FunctionDeclaration
@@ -55,9 +55,9 @@ class MainActivity : ComponentActivity() {
     private lateinit var startButton: MaterialButton
     private lateinit var stopButton: MaterialButton
     private lateinit var rootView: View
-    private lateinit var conversationCard: CardView
-    private lateinit var buttonsCard: CardView
-    private lateinit var statusCard: CardView
+    private lateinit var colorCard: MaterialCardView
+    private lateinit var buttonsCard: MaterialCardView
+    private lateinit var statusCard: MaterialCardView
     private lateinit var currentColorText: TextView
     private lateinit var waveformView: AudioWaveformView
 
@@ -65,34 +65,36 @@ class MainActivity : ComponentActivity() {
     private var currentColorHex = defaultBackgroundColor
     private var isListening = false
 
+    // Material Design colors
+    private val googleBlue = Color.parseColor("#4285F4")
+    private val googleGreen = Color.parseColor("#34A853")
+    private val googleYellow = Color.parseColor("#FBBC05")
+    private val googleRed = Color.parseColor("#EA4335")
+    private val materialGrey = Color.parseColor("#757575")
+
     fun changeBackgroundColor(hexColor: String) {
         runOnUiThread {
             try {
                 val color = Color.parseColor(hexColor)
                 currentColorHex = hexColor
 
-                // Apply to root background
+                colorCard.setCardBackgroundColor(color)
+
                 rootView = findViewById(android.R.id.content)
                 rootView.setBackgroundColor(color)
 
-                // Update the cards with a slightly lighter shade
-                val lighterColor = lightenColor(color, 0.85f)
-                conversationCard.setCardBackgroundColor(lighterColor)
-                buttonsCard.setCardBackgroundColor(lighterColor)
-                statusCard.setCardBackgroundColor(lighterColor)
+                updateColorHexDisplay(hexColor)
 
-                // Update the color text display
-                currentColorText.text = "Current Color: $hexColor"
-
-                // Update waveform color - use a brighter shade of the background
                 waveformView.setColor(color)
 
                 updateStatus(
-                    "Background changed to $hexColor",
+                    "Color changed to $hexColor",
                     android.R.drawable.ic_dialog_info,
                     Color.WHITE
                 )
-                Toast.makeText(this, "Background color changed to $hexColor", Toast.LENGTH_SHORT).show()
+
+                // Material design toast with proper duration
+                Toast.makeText(this, "Color changed to $hexColor", Toast.LENGTH_SHORT).show()
             } catch (e: IllegalArgumentException) {
                 updateStatus(
                     "Invalid color code: $hexColor",
@@ -104,15 +106,23 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    // Helper function to create lighter versions of colors for cards
-    private fun lightenColor(color: Int, factor: Float): Int {
-        val r = Math.min(255, (Color.red(color) * (1f / factor)).toInt())
-        val g = Math.min(255, (Color.green(color) * (1f / factor)).toInt())
-        val b = Math.min(255, (Color.blue(color) * (1f / factor)).toInt())
-        return Color.rgb(r, g, b)
+
+    // Enhanced method to update the color hex display with better contrast
+    private fun updateColorHexDisplay(hexColor: String) {
+        currentColorText.text = "Current Color: $hexColor"
+
+        // Ensure text always has good contrast with background
+        val color = Color.parseColor(hexColor)
+        val brightness =
+            (Color.red(color) * 299 + Color.green(color) * 587 + Color.blue(color) * 114) / 1000
+
+        // Keep background semi-transparent black for consistency
+        currentColorText.setBackgroundColor(Color.parseColor("#99000000"))
+
+        // Always use white text for better visibility against dark background
+        currentColorText.setTextColor(Color.WHITE)
     }
 
-    // Helper to update status display
     private fun updateStatus(message: String, iconResId: Int, textColor: Int) {
         statusText.text = message
         statusText.setTextColor(textColor)
@@ -195,17 +205,20 @@ class MainActivity : ComponentActivity() {
         }
 
         val systemInstruction = content("user") {
-            text("You are a helpful assistant that can change the app's background color. " +
-                    "When a user asks to change the color, identify the color name and convert it to a hex code. " +
-                    "Then call the changeBackgroundColor function with the hex code. " +
-                    "Be creative with colors - if the user asks for things like sunset, ocean, forest, etc., " +
-                    "choose appropriate hex colors that match those themes.")
+            text(
+                "You are a helpful assistant that can show colors. " +
+                        "When a user asks to change the color, identify the color name and convert it to a hex code. " +
+                        "Then call the changeBackgroundColor function with the hex code. " +
+                        "Be creative with colors - if the user asks for things like sunset, ocean, forest, etc., " +
+                        "choose appropriate hex colors that match those themes. For example, sunset could be #FF7E5F, " +
+                        "ocean could be #1A5276, forest could be #1E8449."
+            )
         }
 
         val changeColorFunction = FunctionDeclaration(
             "changeBackgroundColor",
-            "Change the background color of the app",
-            mapOf("hexColor" to Schema.string("The hex color code (e.g., #FF5733) to change the background to"))
+            "Change the color of the card",
+            mapOf("hexColor" to Schema.string("The hex color code (e.g., #FF5733) to change the color to"))
         )
 
         @OptIn(PublicPreviewAPI::class)
@@ -218,7 +231,7 @@ class MainActivity : ComponentActivity() {
 
         session = generativeModel.connect()
         if (session != null) {
-            println("Session is good")
+            println("Session connected successfully")
         }
     }
 
@@ -235,13 +248,14 @@ class MainActivity : ComponentActivity() {
                 )
                 FunctionResponsePart("changeBackgroundColor", response)
             }
+
             else -> {
                 val response = JsonObject(
                     mapOf(
                         "error" to JsonPrimitive("Unknown function: ${functionCall.name}")
                     )
                 )
-                FunctionResponsePart(functionCall.name ?: "unknown", response)
+                FunctionResponsePart(functionCall.name, response)
             }
         }
     }
@@ -259,10 +273,37 @@ class MainActivity : ComponentActivity() {
         isListening = false
     }
 
+    // Material Design button state handling
+    private fun setButtonStates(isListening: Boolean) {
+        if (isListening) {
+            // Visual indication for Start button - disabled state with Material design
+            startButton.isEnabled = false
+            startButton.alpha = 0.6f  // Proper material disabled alpha
+
+            // Enable Stop button
+            stopButton.isEnabled = true
+            stopButton.alpha = 1.0f
+            stopButton.strokeWidth = 2  // Make outline more visible
+        } else {
+            // Enable Start button
+            startButton.isEnabled = true
+            startButton.alpha = 1.0f
+
+            // Visual indication for Stop button - disabled state with Material design
+            stopButton.isEnabled = false
+            stopButton.alpha = 0.6f  // Proper material disabled alpha
+            stopButton.strokeWidth = 1  // Subtle outline when disabled
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+        if (ContextCompat.checkSelfPermission(
+                this,
+                Manifest.permission.RECORD_AUDIO
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
             ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.RECORD_AUDIO), 1)
         }
 
@@ -276,10 +317,11 @@ class MainActivity : ComponentActivity() {
 
         setupButtonListeners()
 
-        initializeConversationListener()
-
         // Initial color application
         changeBackgroundColor(defaultBackgroundColor)
+
+        // Initial button states
+        setButtonStates(false)
     }
 
     private fun initializeViews() {
@@ -289,27 +331,33 @@ class MainActivity : ComponentActivity() {
         statusText = findViewById(R.id.statusText)
         statusIcon = findViewById(R.id.statusIcon)
         conversationText = findViewById(R.id.textView2)
-        conversationCard = findViewById(R.id.conversationCard)
+        colorCard = findViewById(R.id.colorCard)
         buttonsCard = findViewById(R.id.buttonsCard)
         statusCard = findViewById(R.id.statusCard)
         currentColorText = findViewById(R.id.currentColorText)
         waveformView = findViewById(R.id.waveformView)
         rootView = findViewById(android.R.id.content)
+
+        // Apply elevation to status elements for Material Design depth
+        currentColorText.elevation = 8f
     }
 
     private fun setupButtonListeners() {
         val scope = CoroutineScope(Dispatchers.IO)
 
         startButton.setOnClickListener {
-            startButton.isEnabled = false
-            stopButton.isEnabled = true
+            // Update button states using Material Design guidelines
+            setButtonStates(true)
 
-            // Update status UI and start wave animation
+            // Update status UI and start wave animation with Google blue
             updateStatus(
                 "Listening...",
                 android.R.drawable.ic_btn_speak_now,
-                Color.parseColor("#4285F4")
+                googleBlue
             )
+
+            // Set waveform color to match Google blue for consistency
+            waveformView.setColor(googleBlue)
             startWaveAnimation()
 
             scope.launch {
@@ -319,50 +367,19 @@ class MainActivity : ComponentActivity() {
         }
 
         stopButton.setOnClickListener {
-            // Visual feedback for button press
-            stopButton.isEnabled = false
-            startButton.isEnabled = true
+            // Update button states using Material Design guidelines
+            setButtonStates(false)
 
             // Update status UI and stop wave animation
             updateStatus(
                 "Conversation stopped. Press Start to begin again.",
                 android.R.drawable.ic_media_pause,
-                Color.parseColor("#757575")
+                materialGrey
             )
             stopWaveAnimation()
 
             scope.launch {
                 session?.stopAudioConversation()
-            }
-        }
-    }
-
-    private fun initializeConversationListener() {
-        // Default state of buttons
-        stopButton.isEnabled = false
-
-        CoroutineScope(Dispatchers.Default).launch {
-            var text = ""
-
-            session?.receive()?.collect {
-                if (it.status == Status.TURN_COMPLETE) {
-                    runOnUiThread {
-                        // Append new conversation text
-                        val currentText = conversationText.text.toString()
-                        if (currentText.contains("Conversation will appear here...")) {
-                            conversationText.text = text
-                        } else {
-                            conversationText.text = "$currentText\n\n$text"
-                        }
-                    }
-                    text = ""
-                } else if (it.status == Status.NORMAL) {
-                    if (!it.functionCalls.isNullOrEmpty()) {
-                        println("Function call received: ${it.functionCalls}")
-                    } else {
-                        text += it.text
-                    }
-                }
             }
         }
     }

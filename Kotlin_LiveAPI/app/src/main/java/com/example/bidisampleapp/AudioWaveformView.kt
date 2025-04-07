@@ -2,7 +2,6 @@ package com.example.bidisampleapp
 
 import android.content.Context
 import android.graphics.Canvas
-import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.RectF
 import android.util.AttributeSet
@@ -10,6 +9,7 @@ import android.view.View
 import android.animation.ValueAnimator
 import android.view.animation.LinearInterpolator
 import kotlin.random.Random
+import androidx.core.graphics.toColorInt
 
 class AudioWaveformView @JvmOverloads constructor(
     context: Context,
@@ -18,16 +18,17 @@ class AudioWaveformView @JvmOverloads constructor(
 ) : View(context, attrs, defStyleAttr) {
 
     private val paint = Paint().apply {
-        color = Color.parseColor("#4285F4") // Default blue color
+        color = "#4285F4".toColorInt() // Default Google blue color
         isAntiAlias = true
         style = Paint.Style.FILL
     }
 
-    private val barWidth = 10f  // Width of each bar
-    private val barSpacing = 5f // Space between bars
-    private val barCount = 6    // Number of bars to display
-    private val maxBarHeight = 60f
-    private val minBarHeight = 10f
+    // Increased bar width and spacing for a more prominent look
+    private val barWidth = 18f  // Wider bars
+    private val barSpacing = 8f // More spacing between bars
+    private val barCount = 12    // Fewer bars for a cleaner look
+    private val maxBarHeight = 200f // Taller maximum height
+    private val minBarHeight = 20f  // Taller minimum height
 
     private val barHeights = FloatArray(barCount) { minBarHeight }
     private val targetHeights = FloatArray(barCount) { minBarHeight }
@@ -50,17 +51,21 @@ class AudioWaveformView @JvmOverloads constructor(
         for (i in 0 until barCount) {
             animators[i].cancel() // Cancel any running animation
 
-            // Create new animator
+            // Create new animator with slower animation
             animators[i] = ValueAnimator.ofFloat(0f, 1f).apply {
-                duration = 600 + Random.nextInt(400).toLong() // Random duration for natural feel
+                // Longer duration for slower movement
+                duration = 1500 + Random.nextInt(800).toLong()
                 repeatCount = ValueAnimator.INFINITE
                 repeatMode = ValueAnimator.REVERSE
+                // Slower interpolation
                 interpolator = LinearInterpolator()
 
                 // Update bar heights during animation
                 addUpdateListener { animator ->
                     val progress = animator.animatedValue as Float
-                    targetHeights[i] = minBarHeight + (maxBarHeight - minBarHeight) * Random.nextFloat()
+                    // Smoother movement with less random jumps
+                    targetHeights[i] = minBarHeight + (maxBarHeight - minBarHeight) *
+                            (0.4f + 0.6f * Random.nextFloat())
                     barHeights[i] = minBarHeight + (targetHeights[i] - minBarHeight) * progress
                     invalidate()
                 }
@@ -74,9 +79,9 @@ class AudioWaveformView @JvmOverloads constructor(
         for (i in 0 until barCount) {
             animators[i].cancel()
 
-            // Animate bars back to minimum height
+            // Animate bars back to minimum height with smooth transition
             animators[i] = ValueAnimator.ofFloat(barHeights[i], minBarHeight).apply {
-                duration = 300
+                duration = 2000 // Longer duration for smoother transition
                 interpolator = LinearInterpolator()
                 addUpdateListener { animator ->
                     barHeights[i] = animator.animatedValue as Float
@@ -96,7 +101,7 @@ class AudioWaveformView @JvmOverloads constructor(
         // Start position (center the bars)
         var startX = (width - totalWidth) / 2
 
-        // Draw each bar
+        // Draw each bar with more rounded corners
         for (i in 0 until barCount) {
             val rect = RectF(
                 startX,
@@ -104,7 +109,8 @@ class AudioWaveformView @JvmOverloads constructor(
                 startX + barWidth,
                 (height + barHeights[i]) / 2  // Center vertically
             )
-            canvas.drawRoundRect(rect, 4f, 4f, paint)
+            // Use more rounded corners (8f instead of 4f)
+            canvas.drawRoundRect(rect, 8f, 8f, paint)
             startX += barWidth + barSpacing
         }
     }

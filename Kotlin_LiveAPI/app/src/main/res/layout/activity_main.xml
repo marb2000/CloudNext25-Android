@@ -15,35 +15,40 @@
         android:text="Firebase Live APIs"
         android:textSize="28sp"
         android:textStyle="bold"
+        android:fontFamily="sans-serif-medium"
         android:textColor="#FFFFFF"
         android:layout_marginTop="40dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
-    <!-- Color display text view -->
+    <!-- Enhanced Color display text view -->
     <TextView
         android:id="@+id/currentColorText"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Current Color: #7953D2"
-        android:textSize="16sp"
+        android:textSize="22sp"
         android:textStyle="bold"
+        android:fontFamily="sans-serif-medium"
         android:textColor="#FFFFFF"
-        android:background="#33000000"
-        android:padding="8dp"
-        android:layout_marginTop="8dp"
+        android:background="#99000000"
+        android:paddingHorizontal="16dp"
+        android:paddingVertical="12dp"
+        android:layout_marginTop="24dp"
+        android:elevation="4dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/appTitle" />
 
-    <androidx.cardview.widget.CardView
+    <com.google.android.material.card.MaterialCardView
         android:id="@+id/buttonsCard"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
+        android:layout_marginTop="32dp"
         app:cardCornerRadius="16dp"
-        app:cardElevation="8dp"
+        app:cardElevation="4dp"
+        app:strokeWidth="0dp"
         app:cardBackgroundColor="#FFFFFF"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -62,12 +67,16 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:layout_marginEnd="8dp"
-                android:padding="12dp"
+                android:padding="16dp"
                 android:text="Start"
                 android:textSize="16sp"
+                android:fontFamily="sans-serif-medium"
                 app:icon="@android:drawable/ic_btn_speak_now"
+                app:iconSize="24dp"
                 app:iconGravity="textStart"
-                app:cornerRadius="8dp" />
+                app:cornerRadius="28dp"
+                android:stateListAnimator="@null"
+                app:elevation="2dp" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/button2"
@@ -75,35 +84,40 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:layout_marginStart="8dp"
-                android:padding="12dp"
+                android:padding="16dp"
                 android:text="Stop"
                 android:textSize="16sp"
+                android:fontFamily="sans-serif-medium"
                 app:icon="@android:drawable/ic_media_pause"
+                app:iconSize="24dp"
                 app:iconGravity="textStart"
-                app:cornerRadius="8dp"
+                app:cornerRadius="28dp"
+                android:stateListAnimator="@null"
+                app:elevation="2dp"
                 style="@style/Widget.MaterialComponents.Button.OutlinedButton" />
         </LinearLayout>
-    </androidx.cardview.widget.CardView>
+    </com.google.android.material.card.MaterialCardView>
 
-    <!-- Audio Waveform Visualization -->
+    <!-- Audio Waveform Visualization - Bigger size -->
     <com.example.bidisampleapp.AudioWaveformView
         android:id="@+id/waveformView"
-        android:layout_width="150dp"
-        android:layout_height="60dp"
+        android:layout_width="200dp"
+        android:layout_height="100dp"
         android:visibility="visible"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/buttonsCard"
-        android:layout_marginTop="8dp" />
+        android:layout_marginTop="24dp" />
 
-    <androidx.cardview.widget.CardView
-        android:id="@+id/conversationCard"
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/colorCard"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_marginTop="24dp"
         android:layout_marginBottom="24dp"
         app:cardCornerRadius="16dp"
-        app:cardElevation="8dp"
+        app:cardElevation="4dp"
+        app:strokeWidth="0dp"
         app:cardBackgroundColor="#FFFFFF"
         app:layout_constraintBottom_toTopOf="@+id/statusCard"
         app:layout_constraintEnd_toEndOf="parent"
@@ -120,10 +134,11 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Conversation"
-                android:textSize="18sp"
+                android:textSize="20sp"
                 android:textStyle="bold"
+                android:fontFamily="sans-serif-medium"
                 android:textColor="#333333"
-                android:layout_marginBottom="8dp" />
+                android:layout_marginBottom="16dp" />
 
             <ScrollView
                 android:layout_width="match_parent"
@@ -135,19 +150,21 @@
                     android:layout_height="wrap_content"
                     android:text="Conversation will appear here..."
                     android:textSize="16sp"
+                    android:fontFamily="sans-serif"
                     android:padding="8dp"
-                    android:lineSpacingExtra="4dp" />
+                    android:lineSpacingExtra="8dp" />
             </ScrollView>
         </LinearLayout>
-    </androidx.cardview.widget.CardView>
+    </com.google.android.material.card.MaterialCardView>
 
-    <androidx.cardview.widget.CardView
+    <com.google.android.material.card.MaterialCardView
         android:id="@+id/statusCard"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginBottom="24dp"
         app:cardCornerRadius="16dp"
-        app:cardElevation="8dp"
+        app:cardElevation="4dp"
+        app:strokeWidth="0dp"
         app:cardBackgroundColor="#FFFFFF"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
@@ -174,8 +191,9 @@
                 android:layout_height="wrap_content"
                 android:text="Try saying: 'Change background to sky blue'"
                 android:textSize="16sp"
+                android:fontFamily="sans-serif"
                 android:textStyle="italic" />
         </LinearLayout>
-    </androidx.cardview.widget.CardView>
+    </com.google.android.material.card.MaterialCardView>
 
 </androidx.constraintlayout.widget.ConstraintLayout>
