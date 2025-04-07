@@ -10,7 +10,6 @@ import android.media.AudioTrack
 import android.media.MediaRecorder
 import android.os.Bundle
 import android.view.View
-import android.widget.Button
 import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
@@ -44,6 +43,7 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.jsonPrimitive
 import java.util.concurrent.ConcurrentLinkedQueue
 
+
 @OptIn(PublicPreviewAPI::class)
 class MainActivity : ComponentActivity() {
     var session: LiveSession? = null
@@ -56,16 +56,36 @@ class MainActivity : ComponentActivity() {
     private lateinit var stopButton: MaterialButton
     private lateinit var rootView: View
     private lateinit var conversationCard: CardView
+    private lateinit var buttonsCard: CardView
+    private lateinit var statusCard: CardView
+    private lateinit var currentColorText: TextView
+    private lateinit var waveformView: AudioWaveformView
 
     private val defaultBackgroundColor = "#7953D2"
+    private var currentColorHex = defaultBackgroundColor
+    private var isListening = false
 
     fun changeBackgroundColor(hexColor: String) {
         runOnUiThread {
             try {
                 val color = Color.parseColor(hexColor)
+                currentColorHex = hexColor
 
+                // Apply to root background
                 rootView = findViewById(android.R.id.content)
                 rootView.setBackgroundColor(color)
+
+                // Update the cards with a slightly lighter shade
+                val lighterColor = lightenColor(color, 0.85f)
+                conversationCard.setCardBackgroundColor(lighterColor)
+                buttonsCard.setCardBackgroundColor(lighterColor)
+                statusCard.setCardBackgroundColor(lighterColor)
+
+                // Update the color text display
+                currentColorText.text = "Current Color: $hexColor"
+
+                // Update waveform color - use a brighter shade of the background
+                waveformView.setColor(color)
 
                 updateStatus(
                     "Background changed to $hexColor",
@@ -82,6 +102,14 @@ class MainActivity : ComponentActivity() {
                 Toast.makeText(this, "Invalid color code: $hexColor", Toast.LENGTH_SHORT).show()
             }
         }
+    }
+
+    // Helper function to create lighter versions of colors for cards
+    private fun lightenColor(color: Int, factor: Float): Int {
+        val r = Math.min(255, (Color.red(color) * (1f / factor)).toInt())
+        val g = Math.min(255, (Color.green(color) * (1f / factor)).toInt())
+        val b = Math.min(255, (Color.blue(color) * (1f / factor)).toInt())
+        return Color.rgb(r, g, b)
     }
 
     // Helper to update status display
@@ -218,6 +246,19 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    // Start the wave animation when listening
+    private fun startWaveAnimation() {
+        waveformView.visibility = View.VISIBLE
+        waveformView.startAnimation()
+        isListening = true
+    }
+
+    // Stop the wave animation
+    private fun stopWaveAnimation() {
+        waveformView.stopAnimation()
+        isListening = false
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -236,6 +277,9 @@ class MainActivity : ComponentActivity() {
         setupButtonListeners()
 
         initializeConversationListener()
+
+        // Initial color application
+        changeBackgroundColor(defaultBackgroundColor)
     }
 
     private fun initializeViews() {
@@ -246,6 +290,10 @@ class MainActivity : ComponentActivity() {
         statusIcon = findViewById(R.id.statusIcon)
         conversationText = findViewById(R.id.textView2)
         conversationCard = findViewById(R.id.conversationCard)
+        buttonsCard = findViewById(R.id.buttonsCard)
+        statusCard = findViewById(R.id.statusCard)
+        currentColorText = findViewById(R.id.currentColorText)
+        waveformView = findViewById(R.id.waveformView)
         rootView = findViewById(android.R.id.content)
     }
 
@@ -253,16 +301,16 @@ class MainActivity : ComponentActivity() {
         val scope = CoroutineScope(Dispatchers.IO)
 
         startButton.setOnClickListener {
-
             startButton.isEnabled = false
             stopButton.isEnabled = true
 
-            // Update status UI
+            // Update status UI and start wave animation
             updateStatus(
                 "Listening...",
                 android.R.drawable.ic_btn_speak_now,
                 Color.parseColor("#4285F4")
             )
+            startWaveAnimation()
 
             scope.launch {
                 session?.stopReceiving()
@@ -275,12 +323,13 @@ class MainActivity : ComponentActivity() {
             stopButton.isEnabled = false
             startButton.isEnabled = true
 
-            // Update status UI
+            // Update status UI and stop wave animation
             updateStatus(
                 "Conversation stopped. Press Start to begin again.",
                 android.R.drawable.ic_media_pause,
                 Color.parseColor("#757575")
             )
+            stopWaveAnimation()
 
             scope.launch {
                 session?.stopAudioConversation()
