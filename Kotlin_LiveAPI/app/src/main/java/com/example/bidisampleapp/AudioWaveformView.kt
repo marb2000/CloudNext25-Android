@@ -51,10 +51,8 @@ class AudioWaveformView @JvmOverloads constructor(
         for (i in 0 until barCount) {
             animators[i].cancel() // Cancel any running animation
 
-            // Create new animator with slower animation
             animators[i] = ValueAnimator.ofFloat(0f, 1f).apply {
-                // Longer duration for slower movement
-                duration = 1500 + Random.nextInt(800).toLong()
+                duration = 5000 + Random.nextInt(2000).toLong()
                 repeatCount = ValueAnimator.INFINITE
                 repeatMode = ValueAnimator.REVERSE
                 // Slower interpolation
@@ -63,10 +61,10 @@ class AudioWaveformView @JvmOverloads constructor(
                 // Update bar heights during animation
                 addUpdateListener { animator ->
                     val progress = animator.animatedValue as Float
-                    // Smoother movement with less random jumps
                     targetHeights[i] = minBarHeight + (maxBarHeight - minBarHeight) *
-                            (0.4f + 0.6f * Random.nextFloat())
+                            (0.3f + 0.4f * Random.nextFloat())
                     barHeights[i] = minBarHeight + (targetHeights[i] - minBarHeight) * progress
+
                     invalidate()
                 }
                 start()
@@ -79,9 +77,8 @@ class AudioWaveformView @JvmOverloads constructor(
         for (i in 0 until barCount) {
             animators[i].cancel()
 
-            // Animate bars back to minimum height with smooth transition
             animators[i] = ValueAnimator.ofFloat(barHeights[i], minBarHeight).apply {
-                duration = 2000 // Longer duration for smoother transition
+                duration = 2000
                 interpolator = LinearInterpolator()
                 addUpdateListener { animator ->
                     barHeights[i] = animator.animatedValue as Float

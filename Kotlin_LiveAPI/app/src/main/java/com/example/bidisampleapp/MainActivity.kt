@@ -9,8 +9,10 @@ import android.media.AudioRecord
 import android.media.AudioTrack
 import android.media.MediaRecorder
 import android.os.Bundle
-import android.util.Log
 import android.view.View
+import android.view.WindowInsets
+import android.widget.ImageView
+import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.core.app.ActivityCompat
@@ -37,12 +39,11 @@ import com.google.firebase.vertexai.type.liveGenerationConfig
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
-import java.util.concurrent.ConcurrentLinkedQueue
-import android.widget.TextView
 import kotlinx.serialization.json.jsonPrimitive
+import java.util.concurrent.ConcurrentLinkedQueue
 
 
 @OptIn(PublicPreviewAPI::class)
@@ -50,8 +51,8 @@ class MainActivity : ComponentActivity() {
     var session: LiveSession? = null
     val audioQueue = ConcurrentLinkedQueue<ByteArray>()
     val playBackQueue = ConcurrentLinkedQueue<ByteArray>()
-    private lateinit var connectButton: MaterialButton
-    private lateinit var startStopButton: MaterialButton
+    private lateinit var startButton: MaterialButton
+    private lateinit var stopButton: MaterialButton
     private lateinit var rootView: View
     private lateinit var colorCard: MaterialCardView
     private lateinit var buttonsCard: MaterialCardView
@@ -61,10 +62,13 @@ class MainActivity : ComponentActivity() {
     private val defaultBackgroundColor = "#1E293B" // Elegant deep blue
     private var currentColorHex = "#3B82F6" // Card default color - Material blue
     private var isListening = false
-    private var isConnected = false
 
     // Material Design colors
     private val googleBlue = Color.parseColor("#4285F4")
+    private val googleGreen = Color.parseColor("#34A853")
+    private val googleYellow = Color.parseColor("#FBBC05")
+    private val googleRed = Color.parseColor("#EA4335")
+    private val materialGrey = Color.parseColor("#757575")
 
     fun changeBackgroundColor(hexColor: String) {
         runOnUiThread {
@@ -72,16 +76,13 @@ class MainActivity : ComponentActivity() {
                 val color = Color.parseColor(hexColor)
                 currentColorHex = hexColor
 
-                // Set the card background color
                 colorCard.setCardBackgroundColor(color)
 
-                // Update color text
                 updateColorHexDisplay(hexColor)
 
-                // Update waveform color
-                waveformView.setColor(color)
+                // If you want to change the waveform color, uncomment the following line:
+                // waveformView.setColor(color)
 
-                // Short toast notification
                 Toast.makeText(this, "Color updated", Toast.LENGTH_SHORT).show()
             } catch (e: IllegalArgumentException) {
                 Toast.makeText(this, "Invalid color code", Toast.LENGTH_SHORT).show()
@@ -94,8 +95,6 @@ class MainActivity : ComponentActivity() {
     }
 
     private companion object {
-        const val TAG = "MainActivity"
-
         val BUFFER_SIZE = AudioRecord.getMinBufferSize(
             16000,
             AudioFormat.CHANNEL_IN_MONO,
@@ -164,51 +163,49 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    suspend fun bidiSetup(): Boolean {
-        return try {
-            val liveGenerationConfig = liveGenerationConfig {
-                speechConfig = SpeechConfig(voice = Voices.UNSPECIFIED)
-                responseModality = ResponseModality.AUDIO
-            }
+    suspend fun bidiSetup() {
+        val liveGenerationConfig = liveGenerationConfig {
+            speechConfig = SpeechConfig(voice = Voices.UNSPECIFIED)
+            responseModality = ResponseModality.AUDIO
+        }
 
-            val systemInstruction = content("user") {
-                text(
-                    "You are a helpful assistant that can show colors. " +
-                            "When a user asks to change the color, identify the color name and convert it to a hex code. " +
-                            "Then call the changeBackgroundColor function with the hex code. " +
-                            "Be creative with colors - if the user asks for things like sunset, ocean, forest, etc., " +
-                            "choose appropriate hex colors that match those themes. For example, sunset could be #FF7E5F, " +
-                            "ocean could be #1A5276, forest could be #1E8449."
-                )
-            }
-
-            val changeColorFunction = FunctionDeclaration(
-                "changeBackgroundColor",
-                "Change the color of the card",
-                mapOf("hexColor" to Schema.string("The hex color code (e.g., #FF5733) to change the color to"))
+        val systemInstruction = content("user") {
+            text(
+                "You are a helpful assistant that can show colors. " +
+                        "When a user asks to change the color, identify the color name and convert it to a hex code." +
+                        "Never EVER say back the Hex color code to the user. If the color is not a basic one - you should describe it." +
+                        "Then call the changeBackgroundColor function with the hex code. " +
+                        "Be creative with colors - if the user asks for things like sunset, ocean, forest, etc., " +
+                        "choose appropriate hex colors that match those themes. For example, sunset could be #FF7E5F, " +
+                        "ocean could be #1A5276, forest could be #1E8449."
             )
+        }
 
-            @OptIn(PublicPreviewAPI::class)
-            val generativeModel = FirebaseVertexAI.instance.liveModel(
-                "gemini-2.0-flash-exp",
-                generationConfig = liveGenerationConfig,
-                systemInstruction = systemInstruction,
-                tools = listOf(Tool.functionDeclarations(listOf(changeColorFunction)))
-            )
+        val changeColorFunction = FunctionDeclaration(
+            "changeBackgroundColor",
+            "Change the color of the card",
+            mapOf("hexColor" to Schema.string("The hex color code (e.g., #FF5733) to change the color to"))
+        )
 
-            session = generativeModel.connect()
-            Log.d(TAG, "Session connected successfully")
-            true
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to connect: ${e.message}", e)
-            false
+        @OptIn(PublicPreviewAPI::class)
+        val generativeModel = FirebaseVertexAI.instance.liveModel(
+            "gemini-2.0-flash-exp",
+            generationConfig = liveGenerationConfig,
+            systemInstruction = systemInstruction,
+            tools = listOf(Tool.functionDeclarations(listOf(changeColorFunction)))
+        )
+
+        session = generativeModel.connect()
+        if (session != null) {
+            println("Session connected successfully")
         }
     }
+
 
     fun handler(functionCall: FunctionCallPart): FunctionResponsePart {
         return when (functionCall.name) {
             "changeBackgroundColor" -> {
-                val hexColor = functionCall.args["hexColor"]!!.jsonPrimitive.content
+                val hexColor = functionCall.args!!["hexColor"]!!.jsonPrimitive.content
                 changeBackgroundColor(hexColor)
                 val response = JsonObject(
                     mapOf(
@@ -243,16 +240,26 @@ class MainActivity : ComponentActivity() {
         isListening = false
     }
 
-    // Toggle button states
+    // Material Design button state handling
     private fun setButtonStates(isListening: Boolean) {
         this.isListening = isListening
 
         if (isListening) {
-            startStopButton.text = "Stop"
-            startStopButton.icon = ResourcesCompat.getDrawable(resources, android.R.drawable.ic_media_pause, null)
+            // Visual indication for Start button - disabled state with Material design
+            startButton.isEnabled = false
+            startButton.alpha = 0.6f
+
+            // Enable Stop button
+            stopButton.isEnabled = true
+            stopButton.alpha = 1.0f
         } else {
-            startStopButton.text = "Start"
-            startStopButton.icon = ResourcesCompat.getDrawable(resources, android.R.drawable.ic_media_play, null)
+            // Enable Start button
+            startButton.isEnabled = true
+            startButton.alpha = 1.0f
+
+            // Visual indication for Stop button - disabled state with Material design
+            stopButton.isEnabled = false
+            stopButton.alpha = 0.6f
         }
     }
 
@@ -270,24 +277,29 @@ class MainActivity : ComponentActivity() {
         setContentView(R.layout.activity_main)
 
         initializeViews()
+
+        // Run bidiSetup immediately as in the original flow
+        runBlocking {
+            bidiSetup()
+        }
+
         setupButtonListeners()
 
-        // Set initial card color
+        // Initial color application
         colorCard.setCardBackgroundColor(Color.parseColor(currentColorHex))
         updateColorHexDisplay(currentColorHex)
 
         // Set root background color
-        window.decorView.setBackgroundColor(Color.parseColor(defaultBackgroundColor))
+        //window.decorView.setBackgroundColor(Color.parseColor(defaultBackgroundColor))
 
         // Initial button states
-        startStopButton.isEnabled = false
-        startStopButton.alpha = 0.6f
+        setButtonStates(false)
     }
 
     private fun initializeViews() {
-        // Get references to UI components
-        connectButton = findViewById(R.id.connectButton)
-        startStopButton = findViewById(R.id.startStopButton)
+        // Get references to our UI components
+        startButton = findViewById(R.id.button)
+        stopButton = findViewById(R.id.button2)
         colorCard = findViewById(R.id.colorCard)
         buttonsCard = findViewById(R.id.buttonsCard)
         currentColorText = findViewById(R.id.currentColorText)
@@ -298,80 +310,28 @@ class MainActivity : ComponentActivity() {
     private fun setupButtonListeners() {
         val scope = CoroutineScope(Dispatchers.IO)
 
-        connectButton.setOnClickListener {
-            // Disable connect button during connection attempt
-            connectButton.isEnabled = false
-            connectButton.alpha = 0.6f
+        startButton.setOnClickListener {
+            // Update button states using Material Design guidelines
+            setButtonStates(true)
+
+            // Set waveform color to match Google blue for consistency
+            waveformView.setColor(googleBlue)
+            startWaveAnimation()
 
             scope.launch {
-                val connected = bidiSetup()
-
-                withContext(Dispatchers.Main) {
-                    if (connected) {
-                        // Connection successful
-                        isConnected = true
-
-                        // Disable connect button (already connected)
-                        connectButton.isEnabled = false
-                        connectButton.alpha = 0.6f
-
-                        // Enable the Start button
-                        startStopButton.isEnabled = true
-                        startStopButton.alpha = 1.0f
-
-                        // Visual confirmation
-                        Toast.makeText(applicationContext, "Connected successfully", Toast.LENGTH_SHORT).show()
-                    } else {
-                        // Connection failed
-                        connectButton.isEnabled = true
-                        connectButton.alpha = 1.0f
-
-                        Toast.makeText(applicationContext, "Connection failed", Toast.LENGTH_SHORT).show()
-                    }
-                }
+                session?.stopReceiving()
+                session?.startAudioConversation(::handler)
             }
         }
 
-        startStopButton.setOnClickListener {
-            if (isListening) {
-                // Stop functionality
-                setButtonStates(false)
-                stopWaveAnimation()
+        stopButton.setOnClickListener {
+            // Update button states using Material Design guidelines
+            setButtonStates(false)
 
-                scope.launch {
-                    try {
-                        session?.stopAudioConversation()
-                    } catch (e: Exception) {
-                        Log.e(TAG, "Error stopping conversation: ${e.message}", e)
-                    }
-                }
-            } else {
-                // Start functionality
-                setButtonStates(true)
-                waveformView.setColor(googleBlue)
-                startWaveAnimation()
+            stopWaveAnimation()
 
-                scope.launch {
-                    try {
-                        session?.let {
-                            it.stopReceiving()
-                            it.startAudioConversation(::handler)
-                        } ?: run {
-                            withContext(Dispatchers.Main) {
-                                Toast.makeText(applicationContext, "Session unavailable", Toast.LENGTH_SHORT).show()
-                                stopWaveAnimation()
-                                setButtonStates(false)
-                            }
-                        }
-                    } catch (e: Exception) {
-                        Log.e(TAG, "Error starting conversation: ${e.message}", e)
-                        withContext(Dispatchers.Main) {
-                            Toast.makeText(applicationContext, "Error starting conversation", Toast.LENGTH_SHORT).show()
-                            stopWaveAnimation()
-                            setButtonStates(false)
-                        }
-                    }
-                }
+            scope.launch {
+                session?.stopAudioConversation()
             }
         }
     }

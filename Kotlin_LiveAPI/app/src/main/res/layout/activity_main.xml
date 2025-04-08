@@ -91,24 +91,24 @@
             android:gravity="center">
 
             <com.google.android.material.button.MaterialButton
-                android:id="@+id/connectButton"
+                android:id="@+id/button"
                 android:layout_width="0dp"
                 android:layout_height="60dp"
                 android:layout_weight="1"
                 android:layout_marginEnd="8dp"
                 android:backgroundTint="#4285F4"
                 android:fontFamily="sans-serif-medium"
-                android:text="Connect"
+                android:text="Start"
                 android:textColor="#FFFFFF"
                 android:textSize="18sp"
                 app:cornerRadius="30dp"
-                app:icon="@android:drawable/ic_menu_share"
+                app:icon="@android:drawable/ic_media_play"
                 app:iconGravity="textStart"
                 app:iconPadding="8dp"
                 app:iconTint="#FFFFFF" />
 
             <com.google.android.material.button.MaterialButton
-                android:id="@+id/startStopButton"
+                android:id="@+id/button2"
                 android:layout_width="0dp"
                 android:layout_height="60dp"
                 android:layout_weight="1"
@@ -117,11 +117,11 @@
                 android:backgroundTint="#4285F4"
                 android:enabled="false"
                 android:fontFamily="sans-serif-medium"
-                android:text="Start"
+                android:text="Stop"
                 android:textColor="#FFFFFF"
                 android:textSize="18sp"
                 app:cornerRadius="30dp"
-                app:icon="@android:drawable/ic_media_play"
+                app:icon="@android:drawable/ic_media_pause"
                 app:iconGravity="textStart"
                 app:iconPadding="8dp"
                 app:iconTint="#FFFFFF" />
