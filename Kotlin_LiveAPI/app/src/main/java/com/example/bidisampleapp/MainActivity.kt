@@ -42,13 +42,6 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.jsonPrimitive
 import java.util.concurrent.ConcurrentLinkedQueue
 
-// The app doesn't try to listen while the AI is talking
-// When the AI finishes its turn, the microphone automatically turns back on
-// The conversation flows naturally without requiring button presses for each turn
-//
-// It's very much like a tennis match where the ball (speaking turn) goes back and forth,
-// with the app managing the transitions so you don't have to manually indicate whose turn it is each time.
-
 @OptIn(PublicPreviewAPI::class)
 class MainActivity : ComponentActivity() {
 
@@ -85,12 +78,8 @@ class MainActivity : ComponentActivity() {
 
                 updateColorHexDisplay(hexColor)
 
-                // If you want to change the waveform color, uncomment the following line:
-                // waveformView.setColor(color)
-
-                Toast.makeText(this, "Color updated", Toast.LENGTH_SHORT).show()
             } catch (e: IllegalArgumentException) {
-                Toast.makeText(this, "Invalid color code", Toast.LENGTH_SHORT).show()
+                updateColorHexDisplay("Invalid")
             }
         }
     }
@@ -98,46 +87,6 @@ class MainActivity : ComponentActivity() {
     private fun updateColorHexDisplay(hexColor: String) {
         currentColorText.text = "Color: $hexColor"
     }
-
-    private companion object {
-        val BUFFER_SIZE = AudioRecord.getMinBufferSize(
-            16000,
-            AudioFormat.CHANNEL_IN_MONO,
-            AudioFormat.ENCODING_PCM_16BIT
-        )
-        val AUDIO_RECORD = AudioRecord(
-            MediaRecorder.AudioSource.VOICE_COMMUNICATION,
-            16000,
-            AudioFormat.CHANNEL_IN_MONO,
-            AudioFormat.ENCODING_PCM_16BIT,
-            BUFFER_SIZE
-        )
-        val AUDIO_TRACK =
-            AudioTrack(
-                AudioManager.STREAM_MUSIC,
-                24000,
-                AudioFormat.CHANNEL_OUT_MONO,
-                AudioFormat.ENCODING_PCM_16BIT,
-                AudioTrack.getMinBufferSize(
-                    24000,
-                    AudioFormat.CHANNEL_OUT_MONO,
-                    AudioFormat.ENCODING_PCM_16BIT
-                ), AudioTrack.MODE_STREAM
-            )
-    }
-
-    fun startRecording() {
-        AUDIO_RECORD.startRecording()
-        val buffer = ByteArray(BUFFER_SIZE)
-        while (AUDIO_RECORD.recordingState == AudioRecord.RECORDSTATE_RECORDING) {
-            val bytesRead = AUDIO_RECORD.read(buffer, 0, buffer.size)
-            if (bytesRead > 0) {
-                audioQueue.add(buffer.copyOf(bytesRead))
-            }
-        }
-    }
-
-
 
     suspend fun liveAPISetup() {
         val liveGenerationConfig = liveGenerationConfig {
@@ -148,13 +97,16 @@ class MainActivity : ComponentActivity() {
         val systemInstruction = content("user") {
             text(
                 """
-        **Your Role:** You are a friendly and helpful voice assistant in this app. Your main job is to change the app's color based on user requests.
+        **Your Role:** You are a friendly and helpful voice assistant in this app. 
+        Your main job is to change the app's color based on user requests.
 
         **Interaction Steps:**
+        1.  **Greeting (First turn ONLY):** Start the very first interaction with a friendly 
+            greeting like: "Hi! I'm your AI color assistant, ready to help. What color would you like to see?" 
+            (Adapt naturally, don't repeat this exact phrase every time).
 
-        1.  **Greeting (First turn ONLY):** Start the very first interaction with a friendly greeting like: "Hi! I'm your AI color assistant, ready to help. What color would you like to see?" (Adapt naturally, don't repeat this exact phrase every time).
-
-        2.  **Understand Request:** Listen for the user asking for a specific color (e.g., "blue", "emerald green") or an abstract theme/concept (e.g., "ocean", "happiness", "sunset").
+        2.  **Understand Request:** Listen for the user asking for a specific color (e.g., "blue", "emerald green") 
+            or an abstract theme/concept (e.g., "ocean", "happiness", "sunset").
 
         3.  **Determine HEX Code:** Figure out the appropriate hexadecimal color code for the request.
             * For specific colors, use the standard HEX code.
@@ -175,22 +127,18 @@ class MainActivity : ComponentActivity() {
 
         val changeColorFunction = FunctionDeclaration(
             "changeBackgroundColor",
-            "Change the color of the card",
-            mapOf("hexColor" to Schema.string("The hex color code (e.g., #FF5733) to change the color to"))
+            "Change the background color",
+            mapOf("hexColor" to Schema.string("The hex color code (e.g., #FF5733) to change the color"))
         )
 
-        // LIVEAPI STEP 1 - Initialize the Live API session
-        // Get the instance of the service
         @OptIn(PublicPreviewAPI::class)
         val generativeModel = FirebaseVertexAI.instance.liveModel(
-            "gemini-2.0-flash-exp",
+            "gemini-2.0-flash-live-preview-04-09",
             generationConfig = liveGenerationConfig,
             systemInstruction = systemInstruction,
             tools = listOf(Tool.functionDeclarations(listOf(changeColorFunction)))
         )
 
-        // LIVEAPI STEP 2 - Create a running session
-        // This is handles all the websocket connection
         session = generativeModel.connect()
 
         if (session != null) {
@@ -201,7 +149,7 @@ class MainActivity : ComponentActivity() {
     fun handler(functionCall: FunctionCallPart): FunctionResponsePart {
         return when (functionCall.name) {
             "changeBackgroundColor" -> {
-                val hexColor = functionCall.args!!["hexColor"]!!.jsonPrimitive.content
+                val hexColor = functionCall.args["hexColor"]!!.jsonPrimitive.content
                 changeBackgroundColor(hexColor)
                 val response = JsonObject(
                     mapOf(
@@ -209,7 +157,7 @@ class MainActivity : ComponentActivity() {
                         "message" to JsonPrimitive("Background color changed to $hexColor")
                     )
                 )
-                FunctionResponsePart("changeBackgroundColor", response)
+                FunctionResponsePart(functionCall.name, response)
             }
 
             else -> {
@@ -277,7 +225,6 @@ class MainActivity : ComponentActivity() {
         //  Ensure that the Firebase Live API session is fully initialized
         //  before the app continues with the rest of its setup
         runBlocking {
-            // LIVEAPI: Initialize the Live API session
             liveAPISetup()
         }
 
@@ -287,10 +234,6 @@ class MainActivity : ComponentActivity() {
         colorCard.setCardBackgroundColor(Color.parseColor(currentColorHex))
         updateColorHexDisplay(currentColorHex)
 
-        // Set root background color
-        //window.decorView.setBackgroundColor(Color.parseColor(defaultBackgroundColor))
-
-        // Initial button states
         setButtonStates(false)
     }
 
@@ -313,69 +256,17 @@ class MainActivity : ComponentActivity() {
             waveformView.setColor(googleBlue)
             startWaveAnimation()
 
-            //LIVEAPI STEP 3: Launch a coroutine to handle the background communication
             scope.launch {
-                // Stop any ongoing receiving operations
-                session?.stopReceiving()
-
-                // Start a new audio conversation with the model in the Start Button
-                // The "::handler" passes your handler function as a callback
-                // for processing Function Calls Tool
+                //session?.stopReceiving()
                 session?.startAudioConversation(::handler)
             }
         }
 
         stopButton.setOnClickListener {
-            // Update button states using Material Design guidelines
             setButtonStates(false)
-
             stopWaveAnimation()
-
-            //LIVEAPI STEP 4: Stop the audio conversation on the Stop Button
             scope.launch {
                 session?.stopAudioConversation()
-            }
-        }
-    }
-    fun startConversation() {
-        AUDIO_TRACK.play()
-        startRecording()
-
-        // LIVEAPI STEP 5 -
-        // We have two queues: User audio data and AI audio data
-        // Send any existing User's audio data  in the queue to the model
-
-        while (!audioQueue.isEmpty()) {
-            audioQueue.poll()?.let {
-                CoroutineScope(Dispatchers.Default).launch {
-                    session?.sendMediaStream(listOf(MediaData(it, "audio/pcm")))
-                }
-            }
-        }
-
-        // LIVEAPI STEP 6 - Listen for responses from the AI in a background thread
-        CoroutineScope(Dispatchers.Default).launch {
-            session!!.receive().collect {
-                // Stop recording while processing the response
-                AUDIO_RECORD.stop()
-                if (it.status == Status.TURN_COMPLETE) {
-                    // If the AI's turn is complete, start recording again,
-                    // The model will send a message that it's turn is comopleted
-                    startRecording()
-                } else {
-                    // Otherwise, process audio data from the AI's response
-                    val audioData = it.data?.parts?.get(0)?.asInlineDataPartOrNull()?.inlineData
-                    if (audioData != null) {
-                        // We play what the AI said
-                        playBackQueue.add(audioData)
-                    }
-                }
-            }
-        }
-
-        while (!playBackQueue.isEmpty()) {
-            playBackQueue.poll()?.let {
-                AUDIO_TRACK.write(it, 0, it.size)
             }
         }
     }
