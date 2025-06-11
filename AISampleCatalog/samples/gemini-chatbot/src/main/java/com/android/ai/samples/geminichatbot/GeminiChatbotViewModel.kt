@@ -3,6 +3,7 @@ package com.android.ai.samples.geminichatbot
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.Firebase
+import com.google.firebase.ai.vertexai.GenerativeBackend
 import com.google.firebase.vertexai.type.HarmBlockThreshold
 import com.google.firebase.vertexai.type.HarmCategory
 import com.google.firebase.vertexai.type.SafetySetting
@@ -19,7 +20,7 @@ class GeminiChatbotViewModel @Inject constructor(): ViewModel() {
     private val _messageList = MutableStateFlow(mutableListOf<ChatMessage>())
     val messageList: StateFlow<List<ChatMessage>> = _messageList
 
-    private val generativeModel = Firebase.vertexAI.generativeModel(
+    private val generativeModel = Firebase.ai(backend = GenerativeBackend.vertexAI("us-central1")).generativeModel(
         "gemini-1.5-pro",
         generationConfig = generationConfig {
             temperature = 0.9f

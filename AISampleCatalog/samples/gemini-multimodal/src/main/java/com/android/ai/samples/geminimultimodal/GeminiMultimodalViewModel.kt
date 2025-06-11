@@ -7,6 +7,7 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.Firebase
+import com.google.firebase.ai.vertexai.GenerativeBackend
 import com.google.firebase.vertexai.type.HarmBlockThreshold
 import com.google.firebase.vertexai.type.HarmCategory
 import com.google.firebase.vertexai.type.SafetySetting
@@ -26,7 +27,7 @@ class GeminiMultimodalViewModel @Inject constructor(): ViewModel() {
     private val _isGenerating = MutableLiveData(false)
     val isGenerating: LiveData<Boolean> = _isGenerating
 
-    private val generativeModel = Firebase.vertexAI.generativeModel(
+    private val generativeModel = Firebase.ai(backend = GenerativeBackend.vertexAI("us-central1")).generativeModel(
         "gemini-1.5-flash",
         generationConfig = generationConfig {
             temperature = 0.9f

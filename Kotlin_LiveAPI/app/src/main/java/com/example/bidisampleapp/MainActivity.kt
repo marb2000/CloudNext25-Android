@@ -17,7 +17,8 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.card.MaterialCardView
-import com.google.firebase.vertexai.FirebaseVertexAI
+import com.google.firebase.ai.vertexai.GenerativeBackend
+import com.google.firebase.Firebase
 import com.google.firebase.vertexai.type.FunctionCallPart
 import com.google.firebase.vertexai.type.FunctionDeclaration
 import com.google.firebase.vertexai.type.FunctionResponsePart
@@ -132,8 +133,8 @@ class MainActivity : ComponentActivity() {
         )
 
         @OptIn(PublicPreviewAPI::class)
-        val generativeModel = FirebaseVertexAI.instance.liveModel(
-            "gemini-2.0-flash-live-preview-04-09",
+        val generativeModel = Firebase.ai(backend = GenerativeBackend.vertexAI("us-central1")).generativeModel(
+            modelName = "gemini-2.0-flash-live-preview-04-09",
             generationConfig = liveGenerationConfig,
             systemInstruction = systemInstruction,
             tools = listOf(Tool.functionDeclarations(listOf(changeColorFunction)))
