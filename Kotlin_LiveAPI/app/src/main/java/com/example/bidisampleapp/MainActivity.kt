@@ -17,22 +17,19 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.card.MaterialCardView
-import com.google.firebase.vertexai.FirebaseVertexAI
-import com.google.firebase.vertexai.type.FunctionCallPart
-import com.google.firebase.vertexai.type.FunctionDeclaration
-import com.google.firebase.vertexai.type.FunctionResponsePart
-import com.google.firebase.vertexai.type.LiveContentResponse.Status
-import com.google.firebase.vertexai.type.LiveSession
-import com.google.firebase.vertexai.type.MediaData
-import com.google.firebase.vertexai.type.PublicPreviewAPI
-import com.google.firebase.vertexai.type.ResponseModality
-import com.google.firebase.vertexai.type.Schema
-import com.google.firebase.vertexai.type.SpeechConfig
-import com.google.firebase.vertexai.type.Tool
-import com.google.firebase.vertexai.type.Voices
-import com.google.firebase.vertexai.type.asInlineDataPartOrNull
-import com.google.firebase.vertexai.type.content
-import com.google.firebase.vertexai.type.liveGenerationConfig
+import com.google.firebase.Firebase
+import com.google.firebase.ai.ai
+import com.google.firebase.ai.type.*
+import com.google.firebase.ai.type.SpeechConfig
+import com.google.firebase.ai.type.Tool
+import com.google.firebase.ai.type.Content
+import com.google.firebase.ai.type.Voice
+import com.google.firebase.ai.type.PublicPreviewAPI
+import com.google.firebase.ai.type.ResponseModality
+import com.google.firebase.ai.type.asInlineDataPartOrNull
+import com.google.firebase.ai.type.content
+import com.google.firebase.ai.type.liveGenerationConfig
+
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -45,10 +42,9 @@ import java.util.concurrent.ConcurrentLinkedQueue
 @OptIn(PublicPreviewAPI::class)
 class MainActivity : ComponentActivity() {
 
+    @OptIn(com.google.firebase.ai.type.PublicPreviewAPI::class)
     var session: LiveSession? = null
 
-    val audioQueue = ConcurrentLinkedQueue<ByteArray>()
-    val playBackQueue = ConcurrentLinkedQueue<ByteArray>()
     private lateinit var startButton: MaterialButton
     private lateinit var stopButton: MaterialButton
     private lateinit var rootView: View
@@ -57,16 +53,11 @@ class MainActivity : ComponentActivity() {
     private lateinit var currentColorText: TextView
     private lateinit var waveformView: AudioWaveformView
 
-    private val defaultBackgroundColor = "#1E293B"
     private var currentColorHex = "#3B82F6"
     private var isListening = false
 
     // Material Design colors
     private val googleBlue = Color.parseColor("#4285F4")
-    private val googleGreen = Color.parseColor("#34A853")
-    private val googleYellow = Color.parseColor("#FBBC05")
-    private val googleRed = Color.parseColor("#EA4335")
-    private val materialGrey = Color.parseColor("#757575")
 
     fun changeBackgroundColor(hexColor: String) {
         runOnUiThread {
@@ -88,22 +79,22 @@ class MainActivity : ComponentActivity() {
         currentColorText.text = "Color: $hexColor"
     }
 
+
     suspend fun liveAPISetup() {
+
         val liveGenerationConfig = liveGenerationConfig {
-            speechConfig = SpeechConfig(voice = Voices.UNSPECIFIED)
             responseModality = ResponseModality.AUDIO
         }
 
         val systemInstruction = content("user") {
             text(
                 """
-        **Your Role:** You are a friendly and helpful voice assistant in this app. 
+        **Your Role:** You are a friendly and helpful voice assistant. 
         Your main job is to change the app's color based on user requests.
 
         **Interaction Steps:**
         1.  **Greeting (First turn ONLY):** Start the very first interaction with a friendly 
-            greeting like: "Hi! I'm your AI color assistant, ready to help. What color would you like to see?" 
-            (Adapt naturally, don't repeat this exact phrase every time).
+            greeting and funny way, presenting yourself as an AI Color asistant, and describing what you can do." 
 
         2.  **Understand Request:** Listen for the user asking for a specific color (e.g., "blue", "emerald green") 
             or an abstract theme/concept (e.g., "ocean", "happiness", "sunset").
@@ -112,13 +103,14 @@ class MainActivity : ComponentActivity() {
             * For specific colors, use the standard HEX code.
             * For themes/concepts, be creative! Choose a representative HEX code (e.g., sunset ~ #FF7E5F, ocean ~ #1A5276, forest ~ #1E8449, happiness ~ #FBBC05).
 
-        4.  **MANDATORY ACTION:** You **MUST ALWAYS** call the `changeBackgroundColor` function with the chosen HEX code in the `hexColor` parameter. This is how you change the color in the app.
+        4.  **MANDATORY ACTION:** You **MUST ALWAYS** call the `changeBackgroundColor` function with the chosen HEX code in the `hexColor` parameter. 
+        This is how you change the color in the app.
 
         5.  **Verbal Response Rules:** After calling the function, respond verbally to the user:
             * **CRITICAL:** **NEVER SAY THE HEX CODE** (e.g., "#FF7E5F") out loud to the user. Do not mention "hex" or "hexadecimal".
             * **Explain Abstract Choices:** If the request was a theme/concept, briefly explain *why* you chose that color (e.g., "Okay, bringing up a deep blue, like the vast ocean!").
-            * **Confirm Specific Colors:** If the request was a specific color, just confirm the change (e.g., "Alright, changing it to green now!").
-            * Keep responses friendly and concise.
+            * **Confirm Specific Colors:** If the request was a specific color, confirm the change.
+            * Keep responses friendly.
 
         6.  **If Unsure:** If you can't determine a color from the request, politely ask the user to rephrase or try something else.
         """
@@ -131,8 +123,9 @@ class MainActivity : ComponentActivity() {
             mapOf("hexColor" to Schema.string("The hex color code (e.g., #FF5733) to change the color"))
         )
 
+
         @OptIn(PublicPreviewAPI::class)
-        val generativeModel = FirebaseVertexAI.instance.liveModel(
+        val generativeModel = Firebase.ai(backend = GenerativeBackend.vertexAI()).liveModel(
             "gemini-2.0-flash-live-preview-04-09",
             generationConfig = liveGenerationConfig,
             systemInstruction = systemInstruction,
